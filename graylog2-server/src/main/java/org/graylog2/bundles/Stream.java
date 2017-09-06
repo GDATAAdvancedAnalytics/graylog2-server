@@ -46,7 +46,7 @@ public class Stream {
     private Set<String> outputs = Collections.emptySet();
     @JsonProperty
     private boolean defaultStream = false;
-    private List<AlertCondition> alertConditions;
+    private List<AlertCondition> alertConditions = Collections.emptyList();
 
     public String getId() {
         return id;
