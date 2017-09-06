@@ -1,16 +1,16 @@
 /**
  * This file is part of Graylog.
- *
+ * <p>
  * Graylog is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * Graylog is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with Graylog.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -40,12 +40,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.google.common.base.MoreObjects.firstNonNull;
 
 public class BundleExporter {
     private static final Logger LOG = LoggerFactory.getLogger(BundleExporter.class);
@@ -141,7 +139,8 @@ public class BundleExporter {
         bundle.setTitle(dto.title());
         bundle.setDescription(dto.description());
         bundle.setName(dto.name());
-        bundle.setConfig(objectMapper.convertValue(dto.config(), new TypeReference<Map<String, Object>>(){}));
+        bundle.setConfig(objectMapper.convertValue(dto.config(), new TypeReference<Map<String, Object>>() {
+        }));
 
         return bundle;
     }
@@ -174,7 +173,8 @@ public class BundleExporter {
         bundle.setTitle(dto.title());
         bundle.setDescription(dto.description());
         bundle.setName(dto.name());
-        bundle.setConfig(objectMapper.convertValue(dto.config(), new TypeReference<Map<String, Object>>(){}));
+        bundle.setConfig(objectMapper.convertValue(dto.config(), new TypeReference<Map<String, Object>>() {
+        }));
 
         return bundle;
     }
@@ -361,8 +361,25 @@ public class BundleExporter {
         streamDescription.setOutputs(exportOutputReferences(stream.getOutputs()));
         streamDescription.setStreamRules(exportStreamRules(stream.getStreamRules()));
         streamDescription.setDefaultStream(stream.isDefaultStream());
-
+        streamDescription.setAlertConditions(exportAlertConditions(streamService.getAlertConditions(stream)));
+        // streamDescription.setAlertReceivers(exportAlertReceivers(stream.getAlertReceivers()));
         return streamDescription;
+    }
+
+    private List<AlertCondition> exportAlertConditions(List<org.graylog2.plugin.alarms.AlertCondition> alertConditions) {
+        final ImmutableList.Builder<AlertCondition> alertConditionBuilder = ImmutableList.builder();
+        for (org.graylog2.plugin.alarms.AlertCondition alertCondition : alertConditions) {
+            final AlertCondition alertConditionDescription = new AlertCondition();
+            alertConditionDescription.setId(alertCondition.getId());
+            alertConditionDescription.setType(alertCondition.getType());
+            alertConditionDescription.setCreatorUserId(alertCondition.getCreatorUserId());
+            alertConditionDescription.setCreatedAt(alertCondition.getCreatedAt().toDate());
+            alertConditionDescription.setParameters(alertCondition.getParameters());
+            alertConditionDescription.setTitle(alertCondition.getTitle());
+            alertConditionBuilder.add(alertConditionDescription);
+        }
+
+        return alertConditionBuilder.build();
     }
 
     private List<StreamRule> exportStreamRules(List<org.graylog2.plugin.streams.StreamRule> streamRules) {
@@ -461,11 +478,9 @@ public class BundleExporter {
 
         // Add all widgets of this dashboard.
         final Map<String, Object> fields = dashboard.getFields();
-        @SuppressWarnings("unchecked")
-        final Map<String, Object> positions = (Map<String, Object>) dashboard.asMap().get("positions");
+        @SuppressWarnings("unchecked") final Map<String, Object> positions = (Map<String, Object>) dashboard.asMap().get("positions");
         if (fields.containsKey(DashboardImpl.EMBEDDED_WIDGETS)) {
-            @SuppressWarnings("unchecked")
-            final List<BasicDBObject> embeddedWidgets = (List<BasicDBObject>) fields.get(DashboardImpl.EMBEDDED_WIDGETS);
+            @SuppressWarnings("unchecked") final List<BasicDBObject> embeddedWidgets = (List<BasicDBObject>) fields.get(DashboardImpl.EMBEDDED_WIDGETS);
             for (BasicDBObject widgetFields : embeddedWidgets) {
                 org.graylog2.dashboards.widgets.DashboardWidget widget;
                 try {
@@ -489,8 +504,7 @@ public class BundleExporter {
                     LOG.debug("Adding stream {} to export list", streamId);
                 }
 
-                @SuppressWarnings("unchecked")
-                final Map<String, Integer> widgetPosition = (Map<String, Integer>) positions.get(widget.getId());
+                @SuppressWarnings("unchecked") final Map<String, Integer> widgetPosition = (Map<String, Integer>) positions.get(widget.getId());
 
                 if (widgetPosition != null) {
                     final int row = widgetPosition.getOrDefault("row", 0);

@@ -46,6 +46,7 @@ public class Stream {
     private Set<String> outputs = Collections.emptySet();
     @JsonProperty
     private boolean defaultStream = false;
+    private List<AlertCondition> alertConditions;
 
     public String getId() {
         return id;
@@ -109,5 +110,13 @@ public class Stream {
 
     public void setDefaultStream(boolean defaultStream) {
         this.defaultStream = defaultStream;
+    }
+
+    public void setAlertConditions(List<AlertCondition> alertConditions) {
+        this.alertConditions = alertConditions;
+    }
+
+    public List<AlertCondition> getAlertConditions() {
+        return alertConditions;
     }
 }
