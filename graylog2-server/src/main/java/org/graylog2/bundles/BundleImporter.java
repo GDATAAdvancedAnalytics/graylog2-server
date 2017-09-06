@@ -22,6 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.bson.types.ObjectId;
+import org.graylog2.alerts.AbstractAlertCondition;
+import org.graylog2.alerts.types.DummyAlertCondition;
 import org.graylog2.dashboards.DashboardImpl;
 import org.graylog2.dashboards.DashboardService;
 import org.graylog2.dashboards.widgets.DashboardWidgetCreator;
@@ -46,6 +48,7 @@ import org.graylog2.lookup.events.LookupTablesUpdated;
 import org.graylog2.plugin.Message;
 import org.graylog2.plugin.ServerStatus;
 import org.graylog2.plugin.Tools;
+import org.graylog2.plugin.alarms.AlertCondition;
 import org.graylog2.plugin.configuration.Configuration;
 import org.graylog2.plugin.configuration.ConfigurationException;
 import org.graylog2.plugin.database.ValidationException;
@@ -68,17 +71,12 @@ import org.graylog2.streams.StreamService;
 import org.graylog2.streams.events.StreamsChangedEvent;
 import org.graylog2.timeranges.TimeRangeFactory;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.graylog2.plugin.inputs.Extractor.Type.GROK;
@@ -595,6 +593,14 @@ public class BundleImporter {
             }
         }
 
+        for (org.graylog2.bundles.AlertCondition alertCondition : streamDescription.getAlertConditions()) {
+            String title = alertCondition.getTitle();
+            String alertConditionId = alertCondition.getId();
+            DateTime createdAt = new DateTime(alertCondition.getCreatedAt(), DateTimeZone.UTC);
+            String creatorUserId = alertCondition.getCreatorUserId();
+            Map<String, Object> parameters = alertCondition.getParameters();
+            streamService.updateAlertCondition(stream, new DummyAlertCondition(stream, alertConditionId, createdAt, creatorUserId, parameters, title));
+        }
         return stream;
     }
 
