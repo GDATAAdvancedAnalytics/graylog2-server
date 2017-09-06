@@ -14,8 +14,11 @@ import org.graylog2.streams.OutputService;
 import org.graylog2.streams.StreamService;
 import org.joda.time.DateTime;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.util.*;
 
@@ -26,6 +29,9 @@ import static org.mockito.Mockito.when;
  * TODO: Documentation
  */
 public class BundleExporterTest {
+
+    @Rule
+    public MockitoRule rule = MockitoJUnit.rule();
 
     @Mock
     private InputService inputService;
