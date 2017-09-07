@@ -21,9 +21,8 @@ import org.apache.http.client.utils.URIBuilder;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 
-import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
+import static com.google.common.base.MoreObjects.firstNonNull;
 
 public class IntegrationTestsConfig {
     private static final String GL_BASE_URI = System.getProperty("gl.baseuri", "http://localhost:12900");

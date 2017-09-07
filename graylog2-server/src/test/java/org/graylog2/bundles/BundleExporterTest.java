@@ -13,6 +13,7 @@ import org.graylog2.plugin.alarms.AlertCondition;
 import org.graylog2.streams.OutputService;
 import org.graylog2.streams.StreamService;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -69,7 +70,7 @@ public class BundleExporterTest {
 
 
         final String alertConditionTitle = "Best Alert Condition Ever";
-        final AlertCondition dummyAlertCondition = new DummyAlertCondition(stream, "Some Id", DateTime.now(), "Somebody", alertConditionParameterMap, alertConditionTitle);
+        final AlertCondition dummyAlertCondition = new DummyAlertCondition(stream, "Some Id", DateTime.now(DateTimeZone.UTC), "Somebody", alertConditionParameterMap, alertConditionTitle);
 
         final ArrayList<AlertCondition> alertConditions = new ArrayList<>();
         alertConditions.add(dummyAlertCondition);

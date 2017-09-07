@@ -114,6 +114,6 @@ public class BundleImporterProvider implements Provider<BundleImporter> {
                 dashboardWidgetCreator, serverStatus, messageInputFactory,
                 inputLauncher, grokPatternService,
                 dbLookupTableService, dbCacheService, dbDataAdapterService,
-                timeRangeFactory, clusterBus, objectMapper);
+                timeRangeFactory, clusterBus, objectMapper, null);
     }
 }

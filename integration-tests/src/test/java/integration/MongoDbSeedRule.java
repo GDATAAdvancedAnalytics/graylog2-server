@@ -30,8 +30,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Strings.emptyToNull;
-import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 public class MongoDbSeedRule implements MethodRule {
     private static final Logger log = LoggerFactory.getLogger(MongoDbSeedRule.class);

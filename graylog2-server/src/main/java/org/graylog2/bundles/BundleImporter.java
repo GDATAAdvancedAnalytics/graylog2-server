@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.bson.types.ObjectId;
-import org.graylog2.alerts.AbstractAlertCondition;
+import org.graylog2.alerts.AlertConditionFactory;
 import org.graylog2.alerts.types.DummyAlertCondition;
 import org.graylog2.dashboards.DashboardImpl;
 import org.graylog2.dashboards.DashboardService;
@@ -48,7 +48,6 @@ import org.graylog2.lookup.events.LookupTablesUpdated;
 import org.graylog2.plugin.Message;
 import org.graylog2.plugin.ServerStatus;
 import org.graylog2.plugin.Tools;
-import org.graylog2.plugin.alarms.AlertCondition;
 import org.graylog2.plugin.configuration.Configuration;
 import org.graylog2.plugin.configuration.ConfigurationException;
 import org.graylog2.plugin.database.ValidationException;
@@ -105,6 +104,7 @@ public class BundleImporter {
     private final TimeRangeFactory timeRangeFactory;
     private final ClusterEventBus clusterBus;
     private final ObjectMapper objectMapper;
+    private final AlertConditionFactory alertConditionFactory;
 
     private final Map<String, org.graylog2.grok.GrokPattern> createdGrokPatterns = new HashMap<>();
     private final Map<String, MessageInput> createdInputs = new HashMap<>();
@@ -137,7 +137,8 @@ public class BundleImporter {
                           final DBDataAdapterService dbDataAdapterService,
                           final TimeRangeFactory timeRangeFactory,
                           final ClusterEventBus clusterBus,
-                          final ObjectMapper objectMapper) {
+                          final ObjectMapper objectMapper,
+                          final AlertConditionFactory alertConditionFactory) {
         this.inputService = inputService;
         this.inputRegistry = inputRegistry;
         this.extractorFactory = extractorFactory;
@@ -158,6 +159,7 @@ public class BundleImporter {
         this.timeRangeFactory = timeRangeFactory;
         this.clusterBus = clusterBus;
         this.objectMapper = objectMapper;
+        this.alertConditionFactory = alertConditionFactory;
     }
 
     public void runImport(final ConfigurationBundle bundle, final String userName) {
@@ -594,12 +596,20 @@ public class BundleImporter {
         }
 
         for (org.graylog2.bundles.AlertCondition alertCondition : streamDescription.getAlertConditions()) {
+            String type = alertCondition.getType();
             String title = alertCondition.getTitle();
             String alertConditionId = alertCondition.getId();
             DateTime createdAt = new DateTime(alertCondition.getCreatedAt(), DateTimeZone.UTC);
             String creatorUserId = alertCondition.getCreatorUserId();
             Map<String, Object> parameters = alertCondition.getParameters();
-            streamService.updateAlertCondition(stream, new DummyAlertCondition(stream, alertConditionId, createdAt, creatorUserId, parameters, title));
+
+            try {
+                org.graylog2.plugin.alarms.AlertCondition condition = alertConditionFactory.createAlertCondition(type, stream, alertConditionId, createdAt, creatorUserId, parameters, title);
+                streamService.updateAlertCondition(stream, condition);
+            } catch (ConfigurationException e) {
+                throw new ValidationException(e.getMessage());
+            }
+
         }
         return stream;
     }

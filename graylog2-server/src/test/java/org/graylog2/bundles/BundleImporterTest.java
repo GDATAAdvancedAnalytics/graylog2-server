@@ -2,7 +2,7 @@ package org.graylog2.bundles;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bson.types.ObjectId;
-import org.graylog2.alerts.AbstractAlertCondition;
+import org.graylog2.alerts.AlertConditionFactory;
 import org.graylog2.dashboards.DashboardService;
 import org.graylog2.dashboards.widgets.DashboardWidgetCreator;
 import org.graylog2.events.ClusterEventBus;
@@ -24,6 +24,7 @@ import org.graylog2.streams.OutputService;
 import org.graylog2.streams.StreamRuleService;
 import org.graylog2.streams.StreamService;
 import org.graylog2.timeranges.TimeRangeFactory;
+import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -97,28 +98,68 @@ public class BundleImporterTest {
         final List<org.graylog2.alerts.AbstractAlertCondition> createdAlertCondition = new ArrayList<>();
         doAnswer(invocationOnMock -> createdAlertCondition.add(invocationOnMock.getArgument(1))).when(streamService).updateAlertCondition(any(), any());
 
+
+//        AlertConditionFactory alertConditionFactory = mock(AlertConditionFactory.class);
+//        doAnswer(invocationOnMock -> new org.graylog2.alerts.types.MessageCountAlertCondition(null,
+//                invocationOnMock.getArgument(1), invocationOnMock.getArgument(2),
+//                invocationOnMock.getArgument(3), invocationOnMock.getArgument(4),
+//                invocationOnMock.getArgument(5), invocationOnMock.getArgument(6)))
+//            .when(alertConditionFactory)
+//            .createAlertCondition(any(), any(), any(), any(), any(), any(), any());
+
+        AlertConditionFactory alertConditionFactory = mock(AlertConditionFactory.class);
+        doAnswer(invocationOnMock -> {
+
+            String type = invocationOnMock.getArgument(0);
+            org.graylog2.plugin.streams.Stream stream = invocationOnMock.getArgument(1);
+            String id = invocationOnMock.getArgument(2);
+            DateTime createdAt = invocationOnMock.getArgument(3);
+            String creatorUserId = invocationOnMock.getArgument(4);
+            Map<String, Object> parameters = invocationOnMock.getArgument(5);
+            String title = invocationOnMock.getArgument(6);
+
+            if (Objects.equals(type, "message_count")) {
+
+                return new org.graylog2.alerts.types.MessageCountAlertCondition(null,
+                    stream, id,
+                    createdAt, creatorUserId,
+                    parameters, title);
+            }
+
+            if (Objects.equals(type, "field_value")) {
+                return new org.graylog2.alerts.types.FieldValueAlertCondition(null,
+                    stream, id,
+                    createdAt, creatorUserId,
+                    parameters, title);
+            }
+
+            return null;
+        })
+            .when(alertConditionFactory)
+            .createAlertCondition(any(), any(), any(), any(), any(), any(), any());
+
         BundleImporter bundleImporter = new BundleImporter(
-                inputService,
-                inputRegistry,
-                extractorFactory,
-                converterFactory,
-                streamService,
-                streamRuleService,
-                indexSetRegistry,
-                outputService,
-                dashboardService,
-                dashboardWidgetCreator,
-                serverStatus,
-                messageInputFactory,
-                inputLauncher,
-                grokPatternService,
-                dbLookupTableService,
-                dbCacheService,
-                dbDataAdapterService,
-                timeRangeFactory,
-                clusterBus,
-                objectMapper
-        );
+            inputService,
+            inputRegistry,
+            extractorFactory,
+            converterFactory,
+            streamService,
+            streamRuleService,
+            indexSetRegistry,
+            outputService,
+            dashboardService,
+            dashboardWidgetCreator,
+            serverStatus,
+            messageInputFactory,
+            inputLauncher,
+            grokPatternService,
+            dbLookupTableService,
+            dbCacheService,
+            dbDataAdapterService,
+            timeRangeFactory,
+            clusterBus,
+            objectMapper,
+            alertConditionFactory);
 
         // bundle to import
         final ConfigurationBundle bundle = new ConfigurationBundle();
@@ -128,7 +169,7 @@ public class BundleImporterTest {
         final AlertCondition alertCondition1 = new AlertCondition();
 
         alertCondition1.setCreatedAt(Date.from(Instant.now()));
-        alertCondition1.setType("dummy");
+        alertCondition1.setType("message_count");
         alertCondition1.setCreatorUserId("Someone");
         alertCondition1.setId("abc3");
         alertCondition1.setTitle("The Best Alert Condition Ever");
@@ -146,7 +187,7 @@ public class BundleImporterTest {
         final AlertCondition alertCondition2 = new AlertCondition();
 
         alertCondition2.setCreatedAt(Date.from(Instant.now()));
-        alertCondition2.setType("dummy");
+        alertCondition2.setType("field_value");
         alertCondition2.setCreatorUserId("Someone");
         alertCondition2.setId("abc3");
         alertCondition2.setTitle("The Best Alert Condition Ever");
@@ -155,7 +196,8 @@ public class BundleImporterTest {
         alertConditionParameterMap2.put("backlog", 5);
         alertConditionParameterMap2.put("repeat_notifications", false);
         alertConditionParameterMap2.put("grace", 1);
-        alertConditionParameterMap2.put("threshold_type", "MORE");
+        alertConditionParameterMap2.put("threshold_type", "HIGHER");
+        alertConditionParameterMap2.put("type", "STDDEV");
         alertConditionParameterMap2.put("threshold", 50);
         alertConditionParameterMap2.put("time", 5);
         alertCondition2.setParameters(alertConditionParameterMap2);
@@ -187,6 +229,7 @@ public class BundleImporterTest {
         Assert.assertEquals(alertCondition1.getCreatorUserId(), abstractAlertCondition1.getCreatorUserId());
         Assert.assertEquals(alertCondition1.getType(), abstractAlertCondition1.getType());
         Assert.assertEquals(alertCondition1.getParameters(), abstractAlertCondition1.getParameters());
+        Assert.assertTrue(abstractAlertCondition1 instanceof org.graylog2.alerts.types.MessageCountAlertCondition);
 
         org.graylog2.plugin.alarms.AlertCondition abstractAlertCondition2 = createdAlertCondition.get(1);
         Assert.assertNotNull(abstractAlertCondition2);
@@ -196,7 +239,6 @@ public class BundleImporterTest {
         Assert.assertEquals(alertCondition2.getCreatorUserId(), abstractAlertCondition2.getCreatorUserId());
         Assert.assertEquals(alertCondition2.getType(), abstractAlertCondition2.getType());
         Assert.assertEquals(alertCondition2.getParameters(), abstractAlertCondition2.getParameters());
-
-        // profit
+        Assert.assertTrue(abstractAlertCondition2 instanceof org.graylog2.alerts.types.FieldValueAlertCondition);
     }
 }
